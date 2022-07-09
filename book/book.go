@@ -18,10 +18,7 @@ type Book struct {
 	Price     float64
 }
 
-// thsi is
-
-func GetBooks() {
-	//	client, err := mongo.NewClient(options.Client().ApplyURI(uri))
+func getdbCollection() *mongo.Collection {
 	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		log.Fatal(err)
@@ -38,6 +35,15 @@ func GetBooks() {
 	}
 
 	collection := client.Database("libraryDB").Collection("books")
+
+	return collection
+}
+
+// thsi is
+func GetBookByISBN(isbn int) Book {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	collection := getdbCollection()
 	//fmt.Println(collection)
 	//var books []Book
 	var bk Book
@@ -48,4 +54,41 @@ func GetBooks() {
 	}
 	//cur.All(ctx, &books)
 	fmt.Println(bk)
+
+	return bk
+}
+
+func GetAllBook() ([]Book, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	bookCollection := getdbCollection()
+	//fmt.Println(collection)
+	var books []Book
+	var bk Book
+
+	cursor, exErr := bookCollection.Find(ctx, bson.D{})
+	if exErr != nil {
+		defer cursor.Close(ctx)
+		log.Fatal(exErr)
+		return books, exErr
+	}
+	for cursor.Next(ctx) {
+		err := cursor.Decode(&bk)
+		if err != nil {
+			return books, err
+		}
+		books = append(books, bk)
+	}
+	return books, nil
+}
+
+func InsertBook(book Book) (string, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	bookCollection := getdbCollection()
+	rs, err := bookCollection.InsertOne(ctx, book)
+
+	if err != nil {
+		return "-1", err
+	}
+	return fmt.Sprintf("%v", rs.InsertedID), nil
+
 }
