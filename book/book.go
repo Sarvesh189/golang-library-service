@@ -4,12 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
+	libdbconnection "github.com/Sarvesh189/golang-library-service/dbconnection"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type DBCollection struct {
+	mongoCol *mongo.Collection
+}
 
 type Book struct {
 	ISBN      int
@@ -18,25 +24,36 @@ type Book struct {
 	Price     float64
 }
 
+var (
+	dbConnOnce sync.Once
+)
+
 func getdbCollection() *mongo.Collection {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	client, e := mongo.Connect(ctx)
-	if e != nil {
-		log.Fatal(e)
-	}
+	var mcol *mongo.Collection
 
-	e = client.Ping(context.TODO(), nil)
-	if e != nil {
-		log.Fatal(e)
-	}
+	dbConnOnce.Do(func() {
+		client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		e := client.Connect(ctx)
+		//	client, e := mongo.Connect(ctx)
+		if e != nil {
+			log.Fatal(e)
+		}
 
-	collection := client.Database("libraryDB").Collection("books")
+		e = client.Ping(context.TODO(), nil)
+		if e != nil {
+			log.Fatal(e)
+		}
 
-	return collection
+		mcol = client.Database("libraryDB").Collection("books")
+		//dbColl.mongoCol = collection
+
+	})
+
+	return mcol
 }
 
 // thsi is
@@ -60,7 +77,13 @@ func GetBookByISBN(isbn int) Book {
 
 func GetAllBook() ([]Book, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	bookCollection := getdbCollection()
+	client, err := libdbconnection.GetMongoClient()
+	if err != nil {
+		fmt.Println(err)
+		return nil, nil
+	}
+
+	bookCollection := client.Database("libraryDB").Collection("books")
 	//fmt.Println(collection)
 	var books []Book
 	var bk Book
