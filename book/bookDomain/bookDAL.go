@@ -2,6 +2,7 @@ package bookDomain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	libdbconnection "github.com/Sarvesh189/golang-library-service/dbconnection"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const collection_name = "books"
@@ -24,9 +26,16 @@ func getBookByISBN(isbn int) (*Book, error) {
 		return book, nil
 	}
 	collection := dbInstance.Collection(collection_name)
-	exErr := collection.FindOne(ctx, bson.D{{"isbn", isbn}}).Decode(&bk)
+	result := collection.FindOne(ctx, bson.D{{"isbn", isbn}})
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return &bk, errors.New("no document found")
+		}
+	}
+	exErr := result.Decode(&bk)
 	if exErr != nil {
-		log.Fatal(exErr)
+		log.Println(exErr)
+		return &bk, errors.New("record failed to serialized")
 	}
 	log.Output(0, bk.Title+" "+strconv.Itoa(bk.ISBN))
 	return &bk, nil
@@ -48,7 +57,7 @@ func getAllBook() ([]Book, error) {
 	cursor, exErr := bookCollection.Find(ctx, bson.D{})
 	if exErr != nil {
 		defer cursor.Close(ctx)
-		log.Fatal(exErr)
+		log.Println(exErr)
 		return books, exErr
 	}
 	for cursor.Next(ctx) {

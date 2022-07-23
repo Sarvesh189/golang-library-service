@@ -44,7 +44,7 @@ func GetBookByISBN(isbn int) (*Book, error) {
 	if err != nil {
 		return bk, &BookError{
 			Code: 500,
-			Err:  errors.New("there is some server side issue. please try after sometime"),
+			Err:  errors.New(err.Error()),
 		}
 	} else if bk == nil {
 		if err != nil {

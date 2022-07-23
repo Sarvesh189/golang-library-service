@@ -1,10 +1,7 @@
 package route
 
 import (
-	"fmt"
-	"strconv"
-
-	book "github.com/Sarvesh189/golang-library-service/book"
+	bookController "github.com/Sarvesh189/golang-library-service/book"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,38 +20,14 @@ func CreateRoute(app *fiber.App) {
 }
 
 func getBookByISBN(c *fiber.Ctx) error {
-	isbn := c.Params("isbn")
-	isbnN, _ := strconv.Atoi(isbn)
-	bk := book.GetBookByISBN(isbnN)
-	return c.Status(200).JSON(bk)
+	return bookController.GetBookByISBN(c)
+
 }
 
 func getAllBook(c *fiber.Ctx) error {
-	bks, err := book.GetAllBook()
-	if err != nil {
-		return c.Status(500).SendString("There is some server error. Please try later.")
-	}
-	return c.Status(200).JSON(bks)
+	return bookController.GetBooks(c)
 }
 
 func insertBook(c *fiber.Ctx) error {
-	bk := &BookModel{}
-
-	err := c.BodyParser(bk)
-	fmt.Println(bk)
-	var bkEntity book.Book
-	bkEntity.ISBN, _ = strconv.Atoi(bk.ISBN)
-	bkEntity.Title = bk.Title
-	bkEntity.Publisher = bk.Publisher
-	bkEntity.Price, _ = strconv.ParseFloat(bk.Price, 64)
-
-	if err != nil {
-		return c.Status(500).SendString("Parsing error")
-	}
-	id, err := book.InsertBook(bkEntity)
-	if err != nil {
-		return c.Status(500).SendString("Insert db error")
-	}
-	return c.Status(200).SendString(id)
-
+	return bookController.InsertBook(c)
 }

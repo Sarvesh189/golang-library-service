@@ -11,9 +11,9 @@ import (
 func GetBooks(c *fiber.Ctx) error {
 	bks, err := bookDomain.GetAllBook()
 	if err != nil {
-		//err, ok := err.(*bookDomain.BookError)
+		err, _ := err.(*bookDomain.BookError)
 
-		return c.Status(500).SendString(err.Error())
+		return c.Status(err.Code).SendString(err.Err.Error())
 	} else {
 		return c.Status(200).JSON(bks)
 	}
@@ -24,9 +24,8 @@ func GetBookByISBN(c *fiber.Ctx) error {
 	isbnN, _ := strconv.Atoi(isbn)
 	bks, err := bookDomain.GetBookByISBN(isbnN)
 	if err != nil {
-		//err, ok := err.(*bookDomain.BookError)
-
-		return c.Status(500).SendString(err.Error())
+		err, _ := err.(*bookDomain.BookError)
+		return c.Status(err.Code).SendString(err.Err.Error())
 	} else {
 		return c.Status(200).JSON(bks)
 	}
@@ -50,7 +49,8 @@ func InsertBook(c *fiber.Ctx) error {
 	id, err := bookDomain.InsertBook(bkEntity)
 
 	if err != nil {
-		return c.Status(500).SendString("Insert db error")
+		err, _ := err.(*bookDomain.BookError)
+		return c.Status(err.Code).SendString(err.Err.Error())
 	}
 	return c.Status(200).SendString(id)
 
